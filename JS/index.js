@@ -117,6 +117,7 @@ searchInput.addEventListener("input", function (e) {
   }
   display(result);
 });
+
 btnCloseModal.addEventListener("click", function () {
   clearInputs();
   updateBtn.style.display = "none";

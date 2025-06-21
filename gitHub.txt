@@ -1,7 +1,8 @@
+ لاول مره 
 echo "# EMS02" >> README.md
 git init
-git add README.md
-git commit -m "first commit"
+git add .
+git commit -m "initial commit"
 git branch -M main
 git remote add origin https://github.com/aahhmmeeddaammr/EMS02.git
 git push -u origin main
