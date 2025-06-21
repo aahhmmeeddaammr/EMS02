@@ -1,0 +1,20 @@
+/* Modal Image Input */
+
+.Image-Container {
+  width: 200px;
+  height: 200px;
+  font-size: 100px;
+  border-width: 1px;
+}
+
+.Employees-Container {
+  overflow-x: scroll;
+}
+
+#UpdateBtn {
+  display: none;
+}
+
+.invalidimage {
+  border: 1px solid red !important;
+}
