@@ -1,120 +1,120 @@
 // =================== \/\/ ** Global Variables**\/\/===================
 
-var selectedUserIndexForUpdate = -1;
-
-// =================== \/\/ ** Emplyees Array  And Local Storage**\/\/===================
-
-var emplyees = JSON.parse(localStorage.getItem("employees")) || [];
-var counter = emplyees.length;
+let selectedUserIndexForUpdate = -1;
+let emplyees = [];
 
 // =================== \/\/ ** Elements **\/\/===================
 
-var emplyeesContainer = document.getElementById("Emplyees");
-var createBtn = document.getElementById("CreateBtn");
-var btnCloseModal = document.querySelector(".btn-close");
-var userIcon = document.querySelector("#UserIcon");
-var userPhoto = document.querySelector("#UserPhoto");
-var updateBtn = document.querySelector("#UpdateBtn");
-var IntialaBtn = document.querySelector("#IntialaBtn");
-var searchSelection = document.getElementById("Selection-search");
+const emplyeesContainer = document.getElementById("Emplyees");
+const createBtn = document.getElementById("CreateBtn");
+const btnCloseModal = document.querySelector(".btn-close");
+const userIcon = document.querySelector("#UserIcon");
+const userPhoto = document.querySelector("#UserPhoto");
+const updateBtn = document.getElementById("UpdateBtn");
+const IntialaBtn = document.getElementById("IntialaBtn");
+const searchSelection = document.getElementById("Selection-search");
 
 // =================== \/\/ ** HTML Inputs **\/\/===================
 
-var profileImageInput = document.getElementById("profileImageInput");
-var nameInput = document.getElementById("Name");
-var ageInput = document.getElementById("Age");
-var phoneInput = document.getElementById("Phone");
-var cityInput = document.getElementById("City");
-var emailInput = document.getElementById("Email");
-var startDateInput = document.getElementById("StartDate");
-var searchInput = document.getElementById("searchInput");
-var reader = new FileReader();
+const profileImageInput = document.getElementById("profileImageInput");
+const nameInput = document.getElementById("Name");
+const ageInput = document.getElementById("Age");
+const phoneInput = document.getElementById("Phone");
+const emailInput = document.getElementById("Email");
+const startDateInput = document.getElementById("StartDate");
+const searchInput = document.getElementById("searchInput");
 
-// =================== \/\/ ** Event **\/\/===================
-createBtn.addEventListener("click", function () {
-  if (!validateForm()) {
-    return;
+const API_URL = "http://localhost:3000/user";
+
+createBtn.addEventListener("click", async function () {
+  if (!validateForm()) return;
+
+  const formData = new FormData();
+  formData.append("name", nameInput.value);
+  formData.append("age", ageInput.value);
+  formData.append("phone", phoneInput.value);
+  formData.append("email", emailInput.value);
+  formData.append("startDate", startDateInput.value);
+  formData.append("image", profileImageInput.files[0]);
+
+  try {
+    await fetch(API_URL, { method: "POST", body: formData });
+    loadEmployees();
+    clearInputs();
+    closeModal();
+  } catch (err) {
+    console.error("Create Error:", err);
   }
-  var newEmployee = {
-    name: nameInput.value,
-    age: ageInput.value,
-    phone: phoneInput.value,
-    city: cityInput.value,
-    email: emailInput.value,
-    startDate: startDateInput.value,
-    imagePathName: userPhoto.getAttribute("src"),
-    id: `EMP-${counter}`,
-  };
-  emplyees.push(newEmployee);
-  updateLocalStorage();
-  clearInputs();
-  closeModal();
-  counter++;
 });
 
-function deleteUser(id) {
-  // find index by id
-  var index = getEmployeeById(id);
-  emplyees.splice(index, 1);
-  updateLocalStorage();
+async function deleteUser(id) {
+  try {
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    loadEmployees();
+  } catch (err) {
+    console.error("Delete Error:", err);
+  }
 }
 
 profileImageInput.addEventListener("input", function (e) {
-  var emplyeeImage = e.target.files[0];
-  reader.readAsDataURL(emplyeeImage);
+  const reader = new FileReader();
+  reader.readAsDataURL(e.target.files[0]);
   reader.onload = function (r) {
-    var imageSRC = r.currentTarget.result;
-    userPhoto.setAttribute("src", imageSRC);
+    userPhoto.setAttribute("src", r.target.result);
   };
 });
-
+function formatDateForInput(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("ja-JP", { month: "2-digit", day: "2-digit", year: "numeric" }).replaceAll("/", "-");
+}
 function showUpdateModal(id) {
-  var index = getEmployeeById(id);
+  const index = emplyees.findIndex((emp) => emp.id == id);
   selectedUserIndexForUpdate = index;
-  nameInput.value = emplyees[index].name;
-  ageInput.value = emplyees[index].age;
-  phoneInput.value = emplyees[index].phone;
-  cityInput.value = emplyees[index].city;
-  emailInput.value = emplyees[index].email;
-  startDateInput.value = emplyees[index].startDate;
-  userPhoto.setAttribute("src", emplyees[index].imagePathName);
+  const employee = emplyees[index];
+
+  nameInput.value = employee.name;
+  ageInput.value = employee.age;
+  phoneInput.value = employee.phone;
+  emailInput.value = employee.email;
+  startDateInput.value = formatDateForInput(employee.startDate);
+  userPhoto.setAttribute("src", `${employee.image}`);
   updateBtn.style.display = "block";
   createBtn.style.display = "none";
 }
 
-function updateUser() {
-  if (!validateForm()) {
-    return;
+updateBtn.addEventListener("click", async function () {
+  if (!validateForm()) return;
+  const formData = new FormData();
+  const id = emplyees[selectedUserIndexForUpdate].id;
+
+  formData.append("name", nameInput.value);
+  formData.append("age", ageInput.value);
+  formData.append("phone", phoneInput.value);
+  formData.append("email", emailInput.value);
+  formData.append("startDate", startDateInput.value);
+  //
+  if (profileImageInput.files.length > 0) {
+    formData.append("image", profileImageInput.files[0]);
   }
-  var newEmployee = {
-    name: nameInput.value,
-    age: ageInput.value,
-    phone: phoneInput.value,
-    city: cityInput.value,
-    email: emailInput.value,
-    startDate: startDateInput.value,
-    imagePathName: userPhoto.getAttribute("src"),
-    id: emplyees[selectedUserIndexForUpdate].id,
-  };
-  emplyees[selectedUserIndexForUpdate] = newEmployee;
-  updateLocalStorage();
-  clearInputs();
-  closeModal();
-}
+
+  try {
+    await fetch(`${API_URL}/${id}`, { method: "PUT", body: formData });
+    loadEmployees();
+    clearInputs();
+    closeModal();
+  } catch (err) {
+    console.error("Update Error:", err);
+  }
+});
 
 searchSelection.addEventListener("change", function (e) {
-  if (e.target.value == "name" || e.target.value == "email" || e.target.value == "phone") {
+  if (["name", "email", "phone"].includes(e.target.value)) {
     searchInput.removeAttribute("disabled");
   }
 });
 
 searchInput.addEventListener("input", function (e) {
-  var result = [];
-  for (var index = 0; index < emplyees.length; index++) {
-    if (emplyees[index][searchSelection.value].toLowerCase().includes(e.target.value.toLowerCase())) {
-      result.push(emplyees[index]);
-    }
-  }
+  const result = emplyees.filter((emp) => emp[searchSelection.value]?.toLowerCase().includes(e.target.value.toLowerCase()));
   display(result);
 });
 
@@ -123,112 +123,42 @@ btnCloseModal.addEventListener("click", function () {
   updateBtn.style.display = "none";
   createBtn.style.display = "block";
 });
-// =================== \/\/ ** Validation **\/\/===================
-
-nameInput.addEventListener("input", function (e) {
-  if (!validateNameInput(e.target.value)) {
-    nameInput.classList.add("is-invalid");
-  } else {
-    nameInput.classList.replace("is-invalid", "is-valid");
-  }
-});
-
-ageInput.addEventListener("input", function (e) {
-  if (!validateAgeInput(Number(e.target.value))) {
-    ageInput.classList.add("is-invalid");
-  } else {
-    ageInput.classList.replace("is-invalid", "is-valid");
-  }
-});
-
-phoneInput.addEventListener("input", function (e) {
-  if (!validatePhoneInput(e.target.value)) {
-    phoneInput.classList.add("is-invalid");
-  } else {
-    phoneInput.classList.replace("is-invalid", "is-valid");
-  }
-});
-
-cityInput.addEventListener("input", function (e) {
-  if (!validateCityInput(e.target.value)) {
-    cityInput.classList.add("is-invalid");
-  } else {
-    cityInput.classList.replace("is-invalid", "is-valid");
-  }
-});
-
-emailInput.addEventListener("input", function (e) {
-  if (!validateEmailInput(e.target.value)) {
-    emailInput.classList.add("is-invalid");
-  } else {
-    emailInput.classList.replace("is-invalid", "is-valid");
-  }
-});
 
 // =================== \/\/ ** Helpers **\/\/===================
 function display(array) {
-  var employeesHTML = "";
-  for (var index = 0; index < array.length; index++) {
-    employeesHTML += `  <tr style="line-height: 3;" title='EMP-${array[index].name}-${array[index].email}'>
-                        <td width="100px"><img
-                        src="${array[index].imagePathName}"
-                        class="img-fluid" width="100px"
-                        height="100px" alt></td>
-                        <td>${array[index].name}</td>
-                        <td>${array[index].age}</td>
-                        <td>${array[index].city}</td>
-                        <td>${array[index].email}</td>
-                        <td>${array[index].phone}</td>
-                        <td>${array[index].startDate}</td>
-                        <td>
-                        <button class="btn btn-danger"
-                        
-                        id="DeleteBtn" onclick="deleteUser('${array[index].id}')">Delete</button></td>
-                        <td>
-                        <button class="btn btn-primary" data-bs-toggle="modal"
-                        data-bs-target="#exampleModal"
-                        id="updateUserBtn" onclick="showUpdateModal('${array[index].id}')" >Update</button>
-                        </td>
-                        </tr>`;
+  let html = "";
+  for (const emp of array) {
+    html += `
+    <tr style="line-height: 3;" title='EMP-${emp.name}-${emp.email}'>
+      <td width="100px"><img src="${emp.image}" width="100px" height="100px" class="img-fluid" /></td>
+      <td>${emp.name}</td>
+      <td>${emp.age}</td>
+      <td>${emp.email}</td>
+      <td>${emp.phone}</td>
+      <td>${emp.startDate}</td>
+      <td><button class="btn btn-danger" onclick="deleteUser('${emp.id}')">Delete</button></td>
+      <td><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="showUpdateModal('${emp.id}')">Update</button></td>
+    </tr>`;
   }
-  emplyeesContainer.innerHTML = employeesHTML;
+  emplyeesContainer.innerHTML = html;
 }
 
-function getEmployeeById(id) {
-  var index = -1;
-  for (var i = 0; i < emplyees.length; i++) {
-    if (emplyees[i].id === id) {
-      index = i;
-      break;
-    }
+async function loadEmployees() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    emplyees = data.data.users;
+    display(emplyees);
+  } catch (err) {
+    console.error("Load Error:", err);
   }
-  return index;
-}
-
-function updateLocalStorage() {
-  localStorage.setItem("employees", JSON.stringify(emplyees));
-  display(emplyees);
 }
 
 function clearInputs() {
-  nameInput.value = "";
-  nameInput.classList.remove("is-valid");
-  nameInput.classList.remove("is-invalid");
-  ageInput.value = "";
-  ageInput.classList.remove("is-valid");
-  ageInput.classList.remove("is-invalid");
-  phoneInput.value = "";
-  phoneInput.classList.remove("is-valid");
-  phoneInput.classList.remove("is-invalid");
-  cityInput.value = "";
-  cityInput.classList.remove("is-valid");
-  cityInput.classList.remove("is-invalid");
-  emailInput.value = "";
-  emailInput.classList.remove("is-valid");
-  emailInput.classList.remove("is-invalid");
-  startDateInput.value = "";
-  startDateInput.classList.remove("is-valid");
-  startDateInput.classList.remove("is-invalid");
+  [nameInput, ageInput, phoneInput, emailInput, startDateInput].forEach((input) => {
+    input.value = "";
+    input.classList.remove("is-valid", "is-invalid");
+  });
   userPhoto.setAttribute("src", "https://placehold.co/600x400");
   userPhoto.parentNode.classList.remove("invalidimage");
 }
@@ -238,55 +168,34 @@ function closeModal() {
 }
 
 function validateNameInput(value) {
-  if (value.length < 3) {
-    return false;
-  }
-  return true;
+  return value.length >= 3;
 }
 
 function validateAgeInput(value) {
-  if (value < 18 || value > 65) {
-    return false;
-  }
-  return true;
+  return value >= 18 && value <= 65;
 }
 
 function validatePhoneInput(value) {
-  var phoneRegex = /^01[1250][0-9]{8}$/;
-  return phoneRegex.test(value);
-}
-
-function validateCityInput(value) {
-  // alex cairo giza
-  var cityRegex = /^(cairo|giza|alex)$/i;
-  return cityRegex.test(value);
+  return /^01[1250][0-9]{8}$/.test(value);
 }
 
 function validateEmailInput(value) {
-  var emailRegex = /^[a-zA-Z][a-zA-Z0-9\.]{0,50}@(gmail\.com|yahoo\.net)$/;
-  return emailRegex.test(value);
+  return /^[a-zA-Z][a-zA-Z0-9\.]{0,50}@(gmail\.com|yahoo\.net)$/.test(value);
 }
 
 function validateForm() {
-  var result = true;
-  // name input
+  let result = true;
   if (!validateNameInput(nameInput.value)) {
     result = false;
     nameInput.classList.add("is-invalid");
   }
-  // age input
   if (!validateAgeInput(Number(ageInput.value))) {
     result = false;
     ageInput.classList.add("is-invalid");
   }
-  //
   if (!validatePhoneInput(phoneInput.value)) {
     result = false;
     phoneInput.classList.add("is-invalid");
-  }
-  if (!validateCityInput(cityInput.value)) {
-    result = false;
-    cityInput.classList.add("is-invalid");
   }
   if (!validateEmailInput(emailInput.value)) {
     result = false;
@@ -296,10 +205,11 @@ function validateForm() {
     result = false;
     startDateInput.classList.add("is-invalid");
   }
-  if (userPhoto.getAttribute("src") == "https://placehold.co/600x400") {
+  if (userPhoto.getAttribute("src") === "https://placehold.co/600x400") {
     userPhoto.parentNode.classList.add("invalidimage");
+    result = false;
   }
   return result;
 }
 
-display(emplyees);
+loadEmployees();
